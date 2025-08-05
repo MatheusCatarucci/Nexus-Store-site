@@ -1,5 +1,5 @@
 let usuarioLogado = null;
-let unsubscribeUsuario = null; // ← Novo: controle do snapshot
+let unsubscribeUsuario = null;
 
 window.login = async function () {
   const cpf = document.getElementById('cpf-login').value;
@@ -17,7 +17,7 @@ window.login = async function () {
 
   if (dados.senha === senha) {
     usuarioLogado = { cpf, ...dados };
-    iniciarMonitoramentoUsuario(cpf); // ← Novo: ativa notificação
+    iniciarMonitoramentoUsuario(cpf); // inicia o listener real-time
     mostrarMenu();
   } else {
     alert('Senha incorreta!');
@@ -69,7 +69,10 @@ function mostrarMenu() {
 }
 
 window.logout = function () {
-  if (unsubscribeUsuario) unsubscribeUsuario(); // ← Novo: cancela snapshot
+  if (unsubscribeUsuario) {
+    unsubscribeUsuario(); // para o listener quando desloga
+    unsubscribeUsuario = null;
+  }
   usuarioLogado = null;
   mostrarLogin();
 }
@@ -114,11 +117,11 @@ window.fazerPix = async function () {
 
   const usuarioDestino = snapDestino.data();
 
-  // Atualizar saldos
+  // Atualizar saldos localmente antes do banco para evitar inconsistência visual
   usuarioLogado.saldo -= valor;
   usuarioDestino.saldo += valor;
 
-  // Atualizar Firestore
+  // Atualizar Firestore (atomicamente, ideal seria usar transaction, mas deixo simples aqui)
   await db.collection('usuarios').doc(usuarioLogado.cpf).set(usuarioLogado);
   await db.collection('usuarios').doc(cpfDestino).set(usuarioDestino);
 
@@ -166,9 +169,12 @@ window.sacarCDB = async function () {
   atualizarInterface();
 }
 
-// 🔔 NOVO: Monitorar mudanças em tempo real do saldo
+// Variável para controlar alertas para não repetir infinitamente
+let ultimoSaldoAlertado = 0;
+
+// 🔔 Monitorar mudanças em tempo real do saldo
 function iniciarMonitoramentoUsuario(cpf) {
-  if (unsubscribeUsuario) unsubscribeUsuario(); // cancela anterior
+  if (unsubscribeUsuario) unsubscribeUsuario(); // cancela listener anterior
 
   const ref = db.collection('usuarios').doc(cpf);
 
@@ -176,9 +182,11 @@ function iniciarMonitoramentoUsuario(cpf) {
     if (doc.exists) {
       const novosDados = doc.data();
 
-      if (novosDados.saldo > usuarioLogado.saldo) {
+      // Se o saldo aumentou desde o último alert, notifica
+      if (novosDados.saldo > usuarioLogado.saldo && novosDados.saldo > ultimoSaldoAlertado) {
         const valorRecebido = novosDados.saldo - usuarioLogado.saldo;
         alert(`Você recebeu um Pix de R$ ${valorRecebido.toFixed(2)}!`);
+        ultimoSaldoAlertado = novosDados.saldo;
       }
 
       usuarioLogado = { cpf, ...novosDados };
