@@ -1,18 +1,14 @@
-import { db } from './firebase-config.js';
-import {
-  doc, setDoc, getDoc, updateDoc
-} from "https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore.js";
-
+// app.js
 let usuarioLogado = null;
 
 window.login = async function () {
   const cpf = document.getElementById('cpf-login').value;
   const senha = document.getElementById('senha-login').value;
 
-  const ref = doc(db, 'usuarios', cpf);
-  const snapshot = await getDoc(ref);
+  const ref = db.collection('usuarios').doc(cpf);
+  const snapshot = await ref.get();
 
-  if (!snapshot.exists()) {
+  if (!snapshot.exists) {
     alert('CPF não encontrado!');
     return;
   }
@@ -32,10 +28,10 @@ window.cadastrar = async function () {
   const cpf = document.getElementById('cpf').value;
   const senha = document.getElementById('senha').value;
 
-  const ref = doc(db, 'usuarios', cpf);
-  const snapshot = await getDoc(ref);
+  const ref = db.collection('usuarios').doc(cpf);
+  const snapshot = await ref.get();
 
-  if (snapshot.exists()) {
+  if (snapshot.exists) {
     alert('CPF já cadastrado!');
     return;
   }
@@ -52,7 +48,7 @@ window.cadastrar = async function () {
     }
   };
 
-  await setDoc(ref, dados);
+  await ref.set(dados);
   alert('Cadastro realizado com sucesso!');
   mostrarLogin();
 }
@@ -106,10 +102,10 @@ window.fazerPix = async function () {
     return;
   }
 
-  const refDestino = doc(db, 'usuarios', cpfDestino);
-  const snapDestino = await getDoc(refDestino);
+  const refDestino = db.collection('usuarios').doc(cpfDestino);
+  const snapDestino = await refDestino.get();
 
-  if (!snapDestino.exists()) {
+  if (!snapDestino.exists) {
     alert('CPF de destino não encontrado.');
     return;
   }
@@ -121,8 +117,8 @@ window.fazerPix = async function () {
   usuarioDestino.saldo += valor;
 
   // Atualizar Firestore
-  await setDoc(doc(db, 'usuarios', usuarioLogado.cpf), usuarioLogado);
-  await setDoc(doc(db, 'usuarios', cpfDestino), usuarioDestino);
+  await db.collection('usuarios').doc(usuarioLogado.cpf).set(usuarioLogado);
+  await db.collection('usuarios').doc(cpfDestino).set(usuarioDestino);
 
   alert(`Pix de R$ ${valor.toFixed(2)} enviado com sucesso!`);
   atualizarInterface();
@@ -143,7 +139,7 @@ window.depositarCDB = async function () {
   usuarioLogado.saldo -= valor;
   usuarioLogado.saldo_cdb += valor;
 
-  await setDoc(doc(db, 'usuarios', usuarioLogado.cpf), usuarioLogado);
+  await db.collection('usuarios').doc(usuarioLogado.cpf).set(usuarioLogado);
   alert('Depósito no CDB realizado!');
   atualizarInterface();
 }
@@ -163,7 +159,7 @@ window.sacarCDB = async function () {
   usuarioLogado.saldo_cdb -= valor;
   usuarioLogado.saldo += valor;
 
-  await setDoc(doc(db, 'usuarios', usuarioLogado.cpf), usuarioLogado);
+  await db.collection('usuarios').doc(usuarioLogado.cpf).set(usuarioLogado);
   alert('Saque do CDB realizado!');
   atualizarInterface();
 }
