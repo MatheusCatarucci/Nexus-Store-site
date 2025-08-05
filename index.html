@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8" />
+  <title>Banco Nexus</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div id="app">
+    <h1>Banco Nexus</h1>
+
+    <div id="login">
+      <h2>Login</h2>
+      <input id="cpf-login" placeholder="CPF" />
+      <input id="senha-login" type="password" placeholder="Senha" />
+      <button onclick="login()">Entrar</button>
+      <p>ou <a href="#" onclick="mostrarCadastro()">Cadastre-se</a></p>
+    </div>
+
+    <div id="cadastro" style="display: none;">
+      <h2>Cadastro</h2>
+      <input id="nome" placeholder="Nome" />
+      <input id="cpf" placeholder="CPF" />
+      <input id="senha" type="password" placeholder="Senha" />
+      <button onclick="cadastrar()">Cadastrar</button>
+    </div>
+
+    <div id="menu" style="display: none;">
+      <h2>Bem-vindo, <span id="usuario-nome"></span></h2>
+      <p>Saldo: R$ <span id="usuario-saldo"></span></p>
+      <p>CDB: R$ <span id="usuario-cdb"></span></p>
+      <p>Fatura do Cartão: R$ <span id="cartao-fatura"></span></p>
+
+      <hr />
+      <h3>Pix</h3>
+      <input id="cpf-destino" placeholder="CPF do destinatário" />
+      <input id="valor-pix" type="number" placeholder="Valor R$" />
+      <button onclick="fazerPix()">Enviar Pix</button>
+
+      <hr />
+      <h3>Investimento (CDB)</h3>
+      <input id="valor-cdb-deposito" type="number" placeholder="Valor para depósito" />
+      <button onclick="depositarCDB()">Depositar</button>
+      <input id="valor-cdb-saque" type="number" placeholder="Valor para saque" />
+      <button onclick="sacarCDB()">Sacar</button>
+
+      <hr />
+      <button onclick="logout()">Sair</button>
+    </div>
+  </div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
