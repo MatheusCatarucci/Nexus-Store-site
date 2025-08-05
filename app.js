@@ -1,4 +1,3 @@
-// app.js
 let usuarioLogado = null;
 
 window.login = async function () {
@@ -120,7 +119,7 @@ window.fazerPix = async function () {
   await db.collection('usuarios').doc(usuarioLogado.cpf).set(usuarioLogado);
   await db.collection('usuarios').doc(cpfDestino).set(usuarioDestino);
 
-  alert(`Pix de R$ ${valor.toFixed(2)} enviado com sucesso!`);
+  alert(`Pix de R$ ${valor.toFixed(2)} para ${usuarioDestino.nome} foi realizado com sucesso!`);
   atualizarInterface();
 }
 
