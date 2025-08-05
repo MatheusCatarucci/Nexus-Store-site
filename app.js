@@ -1,5 +1,6 @@
 let usuarioLogado = null;
 let unsubscribeUsuario = null;
+let ultimoSaldoAlertado = 0;
 
 window.login = async function () {
   const cpf = document.getElementById('cpf-login').value;
@@ -17,7 +18,8 @@ window.login = async function () {
 
   if (dados.senha === senha) {
     usuarioLogado = { cpf, ...dados };
-    iniciarMonitoramentoUsuario(cpf); // inicia o listener real-time
+    ultimoSaldoAlertado = usuarioLogado.saldo;
+    iniciarMonitoramentoUsuario(cpf);
     mostrarMenu();
   } else {
     alert('Senha incorreta!');
@@ -70,7 +72,7 @@ function mostrarMenu() {
 
 window.logout = function () {
   if (unsubscribeUsuario) {
-    unsubscribeUsuario(); // para o listener quando desloga
+    unsubscribeUsuario();
     unsubscribeUsuario = null;
   }
   usuarioLogado = null;
@@ -121,7 +123,10 @@ window.fazerPix = async function () {
   usuarioLogado.saldo -= valor;
   usuarioDestino.saldo += valor;
 
-  // Atualizar Firestore (atomicamente, ideal seria usar transaction, mas deixo simples aqui)
+  // Salvar nome do remetente no destinatário para alerta
+  usuarioDestino.ultimoPixRemetente = usuarioLogado.nome;
+
+  // Atualizar Firestore
   await db.collection('usuarios').doc(usuarioLogado.cpf).set(usuarioLogado);
   await db.collection('usuarios').doc(cpfDestino).set(usuarioDestino);
 
@@ -169,12 +174,8 @@ window.sacarCDB = async function () {
   atualizarInterface();
 }
 
-// Variável para controlar alertas para não repetir infinitamente
-let ultimoSaldoAlertado = 0;
-
-// 🔔 Monitorar mudanças em tempo real do saldo
 function iniciarMonitoramentoUsuario(cpf) {
-  if (unsubscribeUsuario) unsubscribeUsuario(); // cancela listener anterior
+  if (unsubscribeUsuario) unsubscribeUsuario();
 
   const ref = db.collection('usuarios').doc(cpf);
 
@@ -182,10 +183,10 @@ function iniciarMonitoramentoUsuario(cpf) {
     if (doc.exists) {
       const novosDados = doc.data();
 
-      // Se o saldo aumentou desde o último alert, notifica
       if (novosDados.saldo > usuarioLogado.saldo && novosDados.saldo > ultimoSaldoAlertado) {
         const valorRecebido = novosDados.saldo - usuarioLogado.saldo;
-        alert(`Você recebeu um Pix de R$ ${valorRecebido.toFixed(2)}!`);
+        const remetente = novosDados.ultimoPixRemetente || "alguém";
+        alert(`Você recebeu um Pix de R$ ${valorRecebido.toFixed(2)} de ${remetente}!`);
         ultimoSaldoAlertado = novosDados.saldo;
       }
 
