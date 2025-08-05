@@ -2,6 +2,28 @@ let usuarioLogado = null;
 let unsubscribeUsuario = null;
 let ultimoSaldoAlertado = 0;
 
+// Máscara de CPF
+function aplicarMascaraCPF(input) {
+  input.addEventListener('input', () => {
+    let valor = input.value.replace(/\D/g, '').slice(0, 11);
+    valor = valor.replace(/(\d{3})(\d)/, '$1.$2');
+    valor = valor.replace(/(\d{3})(\d)/, '$1.$2');
+    valor = valor.replace(/(\d{3})(\d{1,2})$/, '$1-$2');
+    input.value = valor;
+  });
+}
+
+['cpf-login', 'cpf', 'cpf-destino'].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) aplicarMascaraCPF(el);
+});
+
+// Tema escuro
+const toggle = document.getElementById("theme-toggle");
+toggle.addEventListener("change", () => {
+  document.body.classList.toggle("dark", toggle.checked);
+});
+
 window.login = async function () {
   const cpf = document.getElementById('cpf-login').value;
   const senha = document.getElementById('senha-login').value;
@@ -9,13 +31,9 @@ window.login = async function () {
   const ref = db.collection('usuarios').doc(cpf);
   const snapshot = await ref.get();
 
-  if (!snapshot.exists) {
-    alert('CPF não encontrado!');
-    return;
-  }
+  if (!snapshot.exists) return alert('CPF não encontrado!');
 
   const dados = snapshot.data();
-
   if (dados.senha === senha) {
     usuarioLogado = { cpf, ...dados };
     ultimoSaldoAlertado = usuarioLogado.saldo;
@@ -24,7 +42,7 @@ window.login = async function () {
   } else {
     alert('Senha incorreta!');
   }
-}
+};
 
 window.cadastrar = async function () {
   const nome = document.getElementById('nome').value;
@@ -33,11 +51,7 @@ window.cadastrar = async function () {
 
   const ref = db.collection('usuarios').doc(cpf);
   const snapshot = await ref.get();
-
-  if (snapshot.exists) {
-    alert('CPF já cadastrado!');
-    return;
-  }
+  if (snapshot.exists) return alert('CPF já cadastrado!');
 
   const dados = {
     nome,
@@ -54,7 +68,7 @@ window.cadastrar = async function () {
   await ref.set(dados);
   alert('Cadastro realizado com sucesso!');
   mostrarLogin();
-}
+};
 
 function atualizarInterface() {
   document.getElementById('usuario-nome').innerText = usuarioLogado.nome;
@@ -71,13 +85,10 @@ function mostrarMenu() {
 }
 
 window.logout = function () {
-  if (unsubscribeUsuario) {
-    unsubscribeUsuario();
-    unsubscribeUsuario = null;
-  }
+  if (unsubscribeUsuario) unsubscribeUsuario();
   usuarioLogado = null;
   mostrarLogin();
-}
+};
 
 function mostrarLogin() {
   document.getElementById('menu').style.display = 'none';
@@ -88,63 +99,36 @@ function mostrarLogin() {
 window.mostrarCadastro = function () {
   document.getElementById('login').style.display = 'none';
   document.getElementById('cadastro').style.display = 'block';
-}
+};
 
 window.fazerPix = async function () {
   const cpfDestino = document.getElementById('cpf-destino').value;
   const valor = parseFloat(document.getElementById('valor-pix').value);
 
-  if (!cpfDestino || isNaN(valor) || valor <= 0) {
-    alert('Preencha corretamente o CPF e valor.');
-    return;
-  }
-
-  if (cpfDestino === usuarioLogado.cpf) {
-    alert('Você não pode transferir para si mesmo.');
-    return;
-  }
-
-  if (valor > usuarioLogado.saldo) {
-    alert('Saldo insuficiente.');
-    return;
-  }
+  if (!cpfDestino || isNaN(valor) || valor <= 0) return alert('Preencha corretamente o CPF e valor.');
+  if (cpfDestino === usuarioLogado.cpf) return alert('Você não pode transferir para si mesmo.');
+  if (valor > usuarioLogado.saldo) return alert('Saldo insuficiente.');
 
   const refDestino = db.collection('usuarios').doc(cpfDestino);
   const snapDestino = await refDestino.get();
-
-  if (!snapDestino.exists) {
-    alert('CPF de destino não encontrado.');
-    return;
-  }
+  if (!snapDestino.exists) return alert('CPF de destino não encontrado.');
 
   const usuarioDestino = snapDestino.data();
-
-  // Atualizar saldos localmente antes do banco para evitar inconsistência visual
   usuarioLogado.saldo -= valor;
   usuarioDestino.saldo += valor;
-
-  // Salvar nome do remetente no destinatário para alerta
   usuarioDestino.ultimoPixRemetente = usuarioLogado.nome;
 
-  // Atualizar Firestore
   await db.collection('usuarios').doc(usuarioLogado.cpf).set(usuarioLogado);
   await db.collection('usuarios').doc(cpfDestino).set(usuarioDestino);
 
   alert(`Pix de R$ ${valor.toFixed(2)} para ${usuarioDestino.nome} foi realizado com sucesso!`);
   atualizarInterface();
-}
+};
 
 window.depositarCDB = async function () {
   const valor = parseFloat(document.getElementById('valor-cdb-deposito').value);
-  if (isNaN(valor) || valor <= 0) {
-    alert('Digite um valor válido para depósito.');
-    return;
-  }
-
-  if (valor > usuarioLogado.saldo) {
-    alert('Saldo insuficiente para depósito.');
-    return;
-  }
+  if (isNaN(valor) || valor <= 0) return alert('Digite um valor válido para depósito.');
+  if (valor > usuarioLogado.saldo) return alert('Saldo insuficiente para depósito.');
 
   usuarioLogado.saldo -= valor;
   usuarioLogado.saldo_cdb += valor;
@@ -152,19 +136,12 @@ window.depositarCDB = async function () {
   await db.collection('usuarios').doc(usuarioLogado.cpf).set(usuarioLogado);
   alert('Depósito no CDB realizado!');
   atualizarInterface();
-}
+};
 
 window.sacarCDB = async function () {
   const valor = parseFloat(document.getElementById('valor-cdb-saque').value);
-  if (isNaN(valor) || valor <= 0) {
-    alert('Digite um valor válido para saque.');
-    return;
-  }
-
-  if (valor > usuarioLogado.saldo_cdb) {
-    alert('Saldo no CDB insuficiente.');
-    return;
-  }
+  if (isNaN(valor) || valor <= 0) return alert('Digite um valor válido para saque.');
+  if (valor > usuarioLogado.saldo_cdb) return alert('Saldo no CDB insuficiente.');
 
   usuarioLogado.saldo_cdb -= valor;
   usuarioLogado.saldo += valor;
@@ -172,13 +149,12 @@ window.sacarCDB = async function () {
   await db.collection('usuarios').doc(usuarioLogado.cpf).set(usuarioLogado);
   alert('Saque do CDB realizado!');
   atualizarInterface();
-}
+};
 
 function iniciarMonitoramentoUsuario(cpf) {
   if (unsubscribeUsuario) unsubscribeUsuario();
 
   const ref = db.collection('usuarios').doc(cpf);
-
   unsubscribeUsuario = ref.onSnapshot((doc) => {
     if (doc.exists) {
       const novosDados = doc.data();

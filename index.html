@@ -6,12 +6,19 @@
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
+  <div id="theme-toggle-container">
+    <label class="switch">
+      <input type="checkbox" id="theme-toggle" />
+      <span class="slider"></span>
+    </label>
+  </div>
+
   <div id="app">
     <h1>Banco Nexus</h1>
 
     <div id="login">
       <h2>Login</h2>
-      <input id="cpf-login" placeholder="CPF" />
+      <input id="cpf-login" placeholder="CPF" maxlength="14" />
       <input id="senha-login" type="password" placeholder="Senha" />
       <button onclick="login()">Entrar</button>
       <p>ou <a href="#" onclick="mostrarCadastro()">Cadastre-se</a></p>
@@ -20,7 +27,7 @@
     <div id="cadastro" style="display: none;">
       <h2>Cadastro</h2>
       <input id="nome" placeholder="Nome" />
-      <input id="cpf" placeholder="CPF" />
+      <input id="cpf" placeholder="CPF" maxlength="14" />
       <input id="senha" type="password" placeholder="Senha" />
       <button onclick="cadastrar()">Cadastrar</button>
     </div>
@@ -33,7 +40,7 @@
 
       <hr />
       <h3>Pix</h3>
-      <input id="cpf-destino" placeholder="CPF do destinatário" />
+      <input id="cpf-destino" placeholder="CPF do destinatário" maxlength="14" />
       <input id="valor-pix" type="number" placeholder="Valor R$" />
       <button onclick="fazerPix()">Enviar Pix</button>
 
@@ -49,13 +56,13 @@
     </div>
   </div>
 
-  <!-- Firebase SDKs compatíveis -->
+  <!-- Firebase SDKs -->
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-firestore-compat.js"></script>
 
-  <!-- Configuração Firebase -->
+  <!-- Firebase config -->
   <script src="firebase-config.js"></script>
-  <!-- Código principal -->
+  <!-- Lógica principal -->
   <script src="app.js"></script>
 </body>
 </html>
