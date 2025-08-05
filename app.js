@@ -1,4 +1,5 @@
 let usuarioLogado = null;
+let unsubscribeUsuario = null; // ← Novo: controle do snapshot
 
 window.login = async function () {
   const cpf = document.getElementById('cpf-login').value;
@@ -16,6 +17,7 @@ window.login = async function () {
 
   if (dados.senha === senha) {
     usuarioLogado = { cpf, ...dados };
+    iniciarMonitoramentoUsuario(cpf); // ← Novo: ativa notificação
     mostrarMenu();
   } else {
     alert('Senha incorreta!');
@@ -67,6 +69,7 @@ function mostrarMenu() {
 }
 
 window.logout = function () {
+  if (unsubscribeUsuario) unsubscribeUsuario(); // ← Novo: cancela snapshot
   usuarioLogado = null;
   mostrarLogin();
 }
@@ -161,4 +164,25 @@ window.sacarCDB = async function () {
   await db.collection('usuarios').doc(usuarioLogado.cpf).set(usuarioLogado);
   alert('Saque do CDB realizado!');
   atualizarInterface();
+}
+
+// 🔔 NOVO: Monitorar mudanças em tempo real do saldo
+function iniciarMonitoramentoUsuario(cpf) {
+  if (unsubscribeUsuario) unsubscribeUsuario(); // cancela anterior
+
+  const ref = db.collection('usuarios').doc(cpf);
+
+  unsubscribeUsuario = ref.onSnapshot((doc) => {
+    if (doc.exists) {
+      const novosDados = doc.data();
+
+      if (novosDados.saldo > usuarioLogado.saldo) {
+        const valorRecebido = novosDados.saldo - usuarioLogado.saldo;
+        alert(`Você recebeu um Pix de R$ ${valorRecebido.toFixed(2)}!`);
+      }
+
+      usuarioLogado = { cpf, ...novosDados };
+      atualizarInterface();
+    }
+  });
 }
